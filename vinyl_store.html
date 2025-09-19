@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Used Vinyls — Shop</title>
+  <style>
+    :root{--bg:#0f1724;--card:#0b1220;--accent:#eab308;--muted:#94a3b8;--text:#e6eef8}
+    body{font-family:Inter, system-ui, -apple-system,Segoe UI, Roboto, "Helvetica Neue", Arial; margin:0; background:linear-gradient(180deg,#071028 0%, #07131b 100%); color:var(--text)}
+    header{padding:28px 24px; display:flex; gap:20px; align-items:center; border-bottom:1px solid rgba(255,255,255,0.04)}
+    h1{margin:0; font-size:20px}
+    .subtitle{color:var(--muted); font-size:13px}
+    main{max-width:1100px; margin:28px auto; padding:0 18px}
+    .controls{display:flex; gap:12px; align-items:center; margin-bottom:18px}
+    .search{flex:1}
+    input, textarea, select, button{font-size:14px}
+    input[type=text], select{width:100%; padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.06); background:rgba(255,255,255,0.02); color:var(--text)}
+    textarea{width:100%; min-height:120px; padding:10px; border-radius:8px; border:1px solid rgba(255,255,255,0.04); background:rgba(255,255,255,0.02); color:var(--text)}
+    button{padding:10px 14px; border-radius:8px; border:0; background:var(--accent); color:#062024; font-weight:600; cursor:pointer}
+    .grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:14px}
+    .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border-radius:10px; padding:12px; box-shadow:0 6px 18px rgba(2,6,23,0.6); border:1px solid rgba(255,255,255,0.03)}
+    .band{font-weight:700; font-size:16px}
+    .album{font-size:14px; color:var(--muted)}
+    .meta{font-size:13px; margin-top:8px; color:var(--muted)}
+    .price{float:right; font-weight:700; color:var(--accent)}
+    .tag{display:inline-block; background:rgba(234,179,8,0.12); color:var(--accent); padding:4px 8px; border-radius:999px; font-size:12px; margin-left:6px}
+    .note{margin-top:8px; color:#bfd6ff; font-size:13px}
+    footer{max-width:1100px;margin:28px auto;color:var(--muted);padding:0 18px}
+    .import-area{margin-bottom:12px}
+    .small{font-size:13px;color:var(--muted)}
+    .empty{padding:40px;text-align:center;color:var(--muted);border:2px dashed rgba(255,255,255,0.03); border-radius:8px}
+    .badge{display:inline-block; padding:2px 6px; border-radius:6px; font-size:11px; margin-left:6px}
+    .badge.magyar{background:#2563eb33; color:#60a5fa}
+    .badge.lprock{background:#f9731633; color:#fb923c}
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Vinyl Vault — Used Vinyls for Sale</h1>
+      <div class="subtitle">Paste the raw text from your .doc and press <strong>Import</strong> — the page will auto-parse and render cards.</div>
+    </div>
+  </header>
+
+  <main>
+    <section class="controls">
+      <div style="flex:1">
+        <label class="small">Paste the list (raw text from your doc)</label>
+        <div class="import-area"><textarea id="rawInput" placeholder="Paste the content of your DOC here... (e.g. 'BEATLES: Abbey Road PCS 7088/1969, UK M/M 11e (lejátszatlan)')"></textarea></div>
+        <div style="display:flex;gap:8px;margin-top:8px"><button id="importBtn">Import & Parse</button><button id="clearBtn">Clear</button><button id="exportHtmlBtn">Export HTML</button></div>
+      </div>
+      <div style="width:260px">
+        <label class="small">Filter / Search</label>
+        <input id="filterInput" type="text" placeholder="Search band, album, country, quality..." />
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <select id="sortSelect"><option value="default">Sort: Default</option><option value="priceAsc">Price ↑</option><option value="priceDesc">Price ↓</option><option value="band">Band A–Z</option></select>
+        </div>
+      </div>
+    </section>
+
+    <section id="results">
+      <div class="empty">No items yet — paste your document content on the left and click <strong>Import &amp; Parse</strong>.</div>
+    </section>
+
+    <div style="height:18px"></div>
+  </main>
+
+  <footer>
+    <div class="small">Notes: The parser tries to detect lines of the form <code>BAND: Album Label barcode/year, country quality price (notes)</code>. If something isn't parsed correctly, you can edit the raw text and re-import. Items with "(lejátszatlan)" will be highlighted as "Unplayed". Items containing "Magyar" or "LP-rock" are shown with labels.</div>
+  </footer>
+
+  <script>
+    function parseLines(text){
+      const lines = text.split(/\r?\n/).map(l=>l.trim()).filter(l=>l.length>0);
+      const items = [];
+      let lastBand = '';
+      for(const raw of lines){
+        let band=''; let album=''; let label=''; let code=''; let date=''; let country=''; let quality=''; let price=''; let notes='';
+        let line = raw;
+        if(line.includes(':')){
+          [band, line] = line.split(':',2).map(s=>s.trim());
+          if(band.toUpperCase() === band && band.length>1){
+            lastBand = band; // store last valid band in all caps
+          }
+        }
+        if(!band && lastBand){
+          band = lastBand;
+        }
+        const notesMatch = line.match(/\(([^)]+)\)\s*$/);
+        if(notesMatch){ notes = notesMatch[1]; line = line.slice(0, notesMatch.index).trim(); }
+        // ár keresése pl. 11e = 11000 Ft
+        const priceMatch = line.match(/(\d+)\s*e$/i);
+        if(priceMatch){
+          price = (parseInt(priceMatch[1],10) * 1000).toString();
+          line = line.slice(0, priceMatch.index).trim();
+        }
+        const parts = line.split(',').map(p=>p.trim());
+        if(parts.length>=2){
+          const last = parts.pop();
+          const lastParts = last.split(/\s+/);
+          if(lastParts.length>=2){
+            country = lastParts[0];
+            quality = lastParts.slice(1).join(' ');
+          } else {
+            country = last;
+          }
+          const left = parts.join(', ');
+          const labelCodeMatch = left.match(/([^\d]+)\s+([A-Za-z0-9\- ]+\/\d{4}|[A-Za-z0-9\- ]+\/?\d{0,4})$/);
+          if(labelCodeMatch){
+            const idx = left.lastIndexOf(labelCodeMatch[0]);
+            album = left.slice(0, idx).trim();
+            label = (labelCodeMatch[1]||'').trim();
+            code = (labelCodeMatch[2]||'').trim();
+          } else {
+            const parts2 = left.split(/\s{2,}/);
+            if(parts2.length>1){ album = parts2[0].trim(); label = parts2[1].trim(); }
+            else { album = left; }
+          }
+        } else {
+          const tokens = line.split(/\s{2,}/);
+          if(tokens.length>1){ album = tokens[0].trim(); label = tokens[1].trim(); }
+          else { album = line; }
+        }
+        if(!album && band && line) album = line;
+        items.push({band, album, label, code, date, country, quality, price, notes, raw});
+      }
+      return items;
+    }
+
+    function render(items){
+      const container = document.getElementById('results');
+      if(items.length===0){ container.innerHTML = '<div class="empty">No items found after parsing. Check the raw text format.</div>'; return; }
+      const grid = document.createElement('div'); grid.className='grid';
+      for(const it of items){
+        const card = document.createElement('div'); card.className='card';
+        const band = document.createElement('div'); band.className='band'; band.textContent = it.band || '(Unknown)';
+        const album = document.createElement('div'); album.className='album'; album.textContent = it.album || '';
+        const meta = document.createElement('div'); meta.className='meta';
+        meta.innerHTML = `
+          <div><strong>Label:</strong> ${it.label||'—'} <span class="price">${it.price?it.price+ ' Ft':''}</span></div>
+          <div><strong>Code/Date:</strong> ${it.code||'—'} &nbsp; <strong>Country:</strong> ${it.country||'—'}</div>
+          <div><strong>Quality:</strong> ${it.quality||'—'}</div>
+        `;
+        card.appendChild(band); card.appendChild(album); card.appendChild(meta);
+        if(it.notes){ const note = document.createElement('div'); note.className='note'; note.textContent = it.notes; card.appendChild(note); }
+        if(it.raw.match(/Magyar/i)){ const b = document.createElement('span'); b.className='badge magyar'; b.textContent='Magyar'; band.appendChild(b); }
+        if(it.raw.match(/LP-?rock/i)){ const b = document.createElement('span'); b.className='badge lprock'; b.textContent='LP-rock'; band.appendChild(b); }
+        grid.appendChild(card);
+      }
+      container.innerHTML=''; container.appendChild(grid);
+    }
+
+    document.getElementById('importBtn').addEventListener('click', ()=>{
+      const raw = document.getElementById('rawInput').value.trim();
+      if(!raw){ alert('Paste the document content first.'); return; }
+      const items = parseLines(raw);
+      window._parsedItems = items;
+      render(items);
+    });
+
+    document.getElementById('clearBtn').addEventListener('click', ()=>{ document.getElementById('rawInput').value=''; document.getElementById('results').innerHTML='<div class="empty">No items yet — paste your document content on the left and click <strong>Import &amp; Parse</strong>.</div>'; window._parsedItems = []; });
+
+    document.getElementById('filterInput').addEventListener('input', (e)=>{
+      const q = e.target.value.trim().toLowerCase();
+      const items = (window._parsedItems||[]).filter(it=> (it.band+ ' '+ it.album+ ' '+ it.label+ ' '+ it.country+ ' '+ it.notes).toLowerCase().includes(q));
+      render(items);
+    });
+
+    document.getElementById('sortSelect').addEventListener('change', (e)=>{
+      const val = e.target.value; const items = (window._parsedItems||[]).slice();
+      if(val==='priceAsc') items.sort((a,b)=> (parseFloat(a.price||0)||0)-(parseFloat(b.price||0)||0));
+      if(val==='priceDesc') items.sort((a,b)=> (parseFloat(b.price||0)||0)-(parseFloat(a.price||0)||0));
+      if(val==='band') items.sort((a,b)=> (a.band||'').localeCompare(b.band||''));
+      render(items);
+    });
+
+    document.getElementById('exportHtmlBtn').addEventListener('click', ()=>{
+      const html = document.documentElement.outerHTML;
+      const blob = new Blob([html], {type:'text/html'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href=url; a.download='vinyl_store.html'; a.click();
+      URL.revokeObjectURL(url);
+    });
+  </script>
+</body>
+</html>

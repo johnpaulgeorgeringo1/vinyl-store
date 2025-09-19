@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vintage Vinyl Records - Premium Used Vinyl Collection</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-content">
+                <h1 class="logo">🎵 Vintage Vinyl Records</h1>
+                <p class="subtitle">Premium Used Vinyl Collection - Rock, Pop, Jazz & More</p>
+                <p style="color: #888; font-size: 0.9rem;">Authentic vintage vinyl records in excellent condition</p>
+            </div>
+        </header>
+
+        <div class="search-filters">
+            <div class="filter-row">
+                <input type="text" id="searchInput" class="filter-input" placeholder="Keresés előadó vagy album szerint...">
+                <select id="genreFilter" class="filter-select">
+                    <option value="">Minden műfaj</option>
+                </select>
+                <select id="qualityFilter" class="filter-select">
+                    <option value="">Minden minőség</option>
+                    <option value="M">Mint (M/M)</option>
+                    <option value="NM">Near Mint (NM)</option>
+                    <option value="VG+">Very Good+ (VG+)</option>
+                    <option value="VG">Very Good (VG)</option>
+                    <option value="G">Good (G)</option>
+                </select>
+                <select id="priceFilter" class="filter-select">
+                    <option value="">Minden ár</option>
+                    <option value="0-5000">0 - 5,000 HUF</option>
+                    <option value="5000-10000">5,000 - 10,000 HUF</option>
+                    <option value="10000-15000">10,000 - 15,000 HUF</option>
+                    <option value="15000-25000">15,000 - 25,000 HUF</option>
+                    <option value="25000+">25,000+ HUF</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="stats-bar">
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-number" id="totalRecords">0</div>
+                    <div class="stat-label">Összesen lemez</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="availableRecords">0</div>
+                    <div class="stat-label">Elérhető</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="avgPrice">0</div>
+                    <div class="stat-label">Átlag ár (HUF)</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="uniqueArtists">0</div>
+                    <div class="stat-label">Egyedi előadók</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="vinylGrid" class="vinyl-grid">
+            <!-- Vinyl records will be dynamically inserted here -->
+        </div>
+
+        <div id="noResults" class="no-results" style="display: none;">
+            Nincs találat a keresési feltételeknek megfelelően.
+        </div>
+    </div>
+
+    <script src="data.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
